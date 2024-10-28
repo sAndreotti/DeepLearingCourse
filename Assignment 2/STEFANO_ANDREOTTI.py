@@ -94,11 +94,12 @@ def training(model, optimizer, loss_fn, DEVICE, n_epochs, batch_size, trainloade
                 _, predicted = torch.max(output.data, 1)
                 correct_valid += (predicted == target).sum().item()
                 valid_count += len(data)  # Update valid_count
+                valid_total = target.size(0)
 
                 # No batch print because valid has only 1 batch
 
             # Epoch accuracy and loss calculations
-            validation_accuracy = (correct_valid / len(validloader)) / 100
+            validation_accuracy = 100 * (correct_valid / valid_total)
             loss_valid = loss_valid / len(validloader)
             validation_loss_list.append(loss_valid)
             print(f"Epoch: {epoch + 1}, Validation Loss: {loss_valid:.4f}, Validation Accuracy: {validation_accuracy:.2f} %\n")
@@ -189,36 +190,38 @@ class CNNS(nn.Module):
 '''
 Q9 -  Code
 '''
-class SCNN(nn.Module):
+class SSJCNN(nn.Module):
     def __init__(self, dropout=0.5):
-        super(SCNN, self).__init__()
+        super(SSJCNN, self).__init__()
         # Input layer
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv1, 32, 32)
         self.bn1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv2 = nn.Conv2d(32, 32, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv2, h_out, w_out)
         self.bn2 = nn.BatchNorm2d(32)
         self.maxpool1 = nn.MaxPool2d(2, 2)
         h_out, w_out = int(h_out/2), int(w_out/2)
 
         # Second block
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv3, h_out, w_out)
         self.bn3 = nn.BatchNorm2d(64)
-        self.conv4 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv4 = nn.Conv2d(64, 64, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv4, h_out, w_out)
         self.bn4 = nn.BatchNorm2d(64)
         self.maxpool2 = nn.MaxPool2d(2, 2)
         h_out, w_out = int(h_out/2), int(w_out/2)
 
         # Third block
-        self.conv5 = nn.Conv2d(64, 128, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv5 = nn.Conv2d(64, 128, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv5, h_out, w_out)
         self.bn5 = nn.BatchNorm2d(128)
-        self.conv6 = nn.Conv2d(128, 128, kernel_size=(3, 3), padding=0, stride=1)
+        self.conv6 = nn.Conv2d(128, 128, kernel_size=(3, 3), padding=1, stride=1)
         h_out, w_out = out_dimensions(self.conv6, h_out, w_out)
         self.bn6 = nn.BatchNorm2d(128)
+        self.maxpool3 = nn.MaxPool2d(2, 2)
+        h_out, w_out = int(h_out/2), int(w_out/2)
 
         # Flatten layer
         self.flatten = nn.Flatten()
@@ -257,6 +260,7 @@ class SCNN(nn.Module):
         x = self.conv6(x)
         x = self.bn6(x)
         x = F.gelu(x)
+        x = self.maxpool3(x)
 
         x = self.flatten(x)
         x = self.fc1(x)
@@ -271,97 +275,6 @@ class SCNN(nn.Module):
         return x
 
 
-class CNNGodzilla(nn.Module):
-    def __init__(self):
-        super(CNNGodzilla, self).__init__()
-
-        # First block
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv1, 32, 32)  # 32x32
-        self.BN1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv2, h_out, w_out)  # 32x32
-        self.BN2 = nn.BatchNorm2d(32)
-        self.pool1 = nn.MaxPool2d(2, 2)
-        h_out, w_out = int(h_out / 2), int(w_out / 2)  # 16x16
-
-        # Second block
-        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv3, h_out, w_out)  # 16x16
-        self.BN3 = nn.BatchNorm2d(64)
-        self.conv4 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv4, h_out, w_out)  # 16x16
-        self.BN4 = nn.BatchNorm2d(64)
-        self.pool2 = nn.MaxPool2d(2, 2)
-        h_out, w_out = int(h_out / 2), int(w_out / 2)  # 8x8
-
-        # Third block
-        self.conv5 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv5, h_out, w_out)  # 8x8
-        self.BN5 = nn.BatchNorm2d(128)
-        self.conv6 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3, 3), padding=1, stride=1)
-        h_out, w_out = out_dimensions(self.conv6, h_out, w_out)  # 8x8
-        self.BN6 = nn.BatchNorm2d(256)
-        self.pool3 = nn.MaxPool2d(2, 2)
-        h_out, w_out = int(h_out / 2), int(w_out / 2)  # 4x4
-
-        # Flatten
-        self.flatten = nn.Flatten()
-
-        # Store final dimensions for the forward pass
-        self.dimensions_final = (256, h_out, w_out)  # Should be (256, 4, 4)
-
-        # Fully Connected
-        self.fc1 = nn.Linear(256 * h_out * w_out, 128)  # 256 * 4 * 4 = 4096 input features
-        self.BN7 = nn.BatchNorm1d(128)
-        self.Dropout1 = nn.Dropout(0.5)
-
-        self.fc2 = nn.Linear(128, 64)
-        self.BN8 = nn.BatchNorm1d(64)
-        self.Dropout2 = nn.Dropout(0.5)
-
-        self.fc3 = nn.Linear(64, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.BN1(x)
-        x = F.gelu(x)
-        x = self.conv2(x)
-        x = self.BN2(x)
-        x = F.gelu(x)
-        x = self.pool1(x)
-
-        x = self.conv3(x)
-        x = self.BN3(x)
-        x = F.gelu(x)
-        x = self.conv4(x)
-        x = self.BN4(x)
-        x = F.gelu(x)
-        x = self.pool2(x)
-
-        x = self.conv5(x)
-        x = self.BN5(x)
-        x = F.gelu(x)
-        x = self.conv6(x)
-        x = self.BN6(x)
-        x = F.gelu(x)
-        x = self.pool3(x)
-
-        x = self.flatten(x)
-
-        x = self.fc1(x)
-        x = self.BN7(x)
-        x = F.gelu(x)
-        x = self.Dropout1(x)
-
-        x = self.fc2(x)
-        x = self.BN8(x)
-        x = F.gelu(x)
-        x = self.Dropout2(x)
-
-        x = self.fc3(x)
-        return x
-
 if __name__ == "__main__":
     '''
     DON'T MODIFY THE SEED!
@@ -369,7 +282,7 @@ if __name__ == "__main__":
     # Set the seed for reproducibility
     manual_seed = 42
     torch.manual_seed(manual_seed)
-    
+
     '''
     Q4 - Code
     '''
@@ -442,11 +355,11 @@ if __name__ == "__main__":
     '''
     first_image = images[0]
 
-    print(f"Type of each image: {first_image.type}")
+    print(f"Type of each image: {first_image.dtype}")
     print(f"Shape of the image tensor: {first_image.shape}")  # (C, H, W)
 
-    channels, height, width = first_image.shape
-    print(f"Width: {width}, Height: {height}, Channels: {channels}")
+    width, height, channels = first_image.shape
+    print(f"Width: {width}, Height: {height}, Channels: {channels}\n")
 
     '''
     Q5 - Code
@@ -460,7 +373,7 @@ if __name__ == "__main__":
     '''
     model = CNNS()
     learning_rate = 0.033
-    n_epochs = 4 
+    n_epochs = 4
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
@@ -484,51 +397,46 @@ if __name__ == "__main__":
     Q9 -  Code
     '''
     data_augment = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(10),
-        transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2),
+        transforms.RandomHorizontalFlip(p=0.2), #0.3
+        transforms.RandomRotation(7), # 10
         transforms.ToTensor(),
         transforms.Normalize(mean=0, std=1)
     ])
 
     trainset_q9 = datasets.CIFAR10(root='./data', train=True, download=False, transform=data_augment)
-    testset_q9 = datasets.CIFAR10(root='./data', train=False, download=False, transform=data_augment)
 
-    # batch size changed, have to recreate the loaders
-    batch_q9 = 48
-    trainloader_q9 = DataLoader(trainset_q9, batch_size=batch_q9, shuffle=True)
-    validset_q9, testset_q9 = torch.utils.data.random_split(testset_q9, [0.5, 0.5])
-    testloader_q9 = DataLoader(testset_q9, batch_size=len(testset_q9))
-    validloader_q9 = DataLoader(validset_q9, batch_size=len(validset_q9))
+    # Recreate train loader with data augment
+    trainloader_q9 = DataLoader(trainset_q9, batch_size=batch_size, shuffle=True)
 
-    model = SCNN()
-    learning_rate = 0.03 #0.025
-    n_epochs = 20 # 20
+    model = SSJCNN()
+    learning_rate = 0.0283 #0.028
+    n_epochs = 7 # 7 or 20
+    # with 20 -> 85,74
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
     print("Q9 Training...")
     model, train_loss_list, validation_loss_list = training(model= model, optimizer=optimizer, loss_fn=loss_fn,
-                                                            DEVICE=DEVICE, n_epochs=n_epochs, batch_size=batch_q9,
-                                                            trainloader=trainloader_q9, validloader=validloader_q9,
+                                                            DEVICE=DEVICE, n_epochs=n_epochs, batch_size=batch_size,
+                                                            trainloader=trainloader_q9, validloader=validloader,
                                                             verbose=False)
-    accuracy(model=model, testloader=testloader_q9)
+    accuracy(model=model, testloader=testloader)
     print("\n")
-    #loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list)
+    loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list)
 
     '''
     Q10 -  Code
     '''
     learning_rate = 0.03
     n_epochs = 4
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
-    loss_fn = nn.CrossEntropyLoss()
 
     for seed in range(5,10):
         torch.manual_seed(seed)
         print("Seed equal to ", torch.random.initial_seed())
 
         model = CNNS()
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+        loss_fn = nn.CrossEntropyLoss()
         model, train_loss_list, validation_loss_list = training(model= model, optimizer=optimizer, loss_fn=loss_fn,
                                                                 DEVICE=DEVICE, n_epochs=n_epochs, batch_size=batch_size,
                                                                 trainloader=trainloader, validloader=validloader,
