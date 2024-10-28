@@ -373,7 +373,7 @@ if __name__ == "__main__":
     '''
     model = CNNS()
     learning_rate = 0.033
-    n_epochs = 4
+    n_epochs = 1#4
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
