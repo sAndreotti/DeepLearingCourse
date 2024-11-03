@@ -18,6 +18,7 @@ import numpy as np
 
 # functions to show an image
 def imshow(img):
+    # Function to print an image
     img = img / 2 + 0.5  # unnormalize
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -25,11 +26,12 @@ def imshow(img):
     plt.show()
 
 
-def training(model, optimizer, loss_fn, DEVICE, n_epochs, batch_size, trainloader, validloader, verbose=False):
+def training(model, optimizer, loss_fn, DEVICE: torch.device, n_epochs: int, batch_size: int, trainloader: DataLoader,
+             validloader: DataLoader, verbose: bool=False):
+    # Function to train a model, uses verbose for more detailed messages on train
     model = model.to(DEVICE)
 
     train_count = 0
-    valid_count = 0
     train_loss_list = []
     validation_loss_list = []
 
@@ -58,7 +60,6 @@ def training(model, optimizer, loss_fn, DEVICE, n_epochs, batch_size, trainloade
             correct_train += (predicted == target).sum().item()  # Count correct predictions
             train_count += len(data)  # Update train_count for accurate batch calculation
 
-            # total batches 1562
             # Print train loss and accuracy every n batches
             if verbose:
                 if (train_count // batch_size) % ((len(trainloader)-1) // 3) == 0:
@@ -93,7 +94,6 @@ def training(model, optimizer, loss_fn, DEVICE, n_epochs, batch_size, trainloade
                 # Calculate validation accuracy
                 _, predicted = torch.max(output.data, 1)
                 correct_valid += (predicted == target).sum().item()
-                valid_count += len(data)  # Update valid_count
                 valid_total = target.size(0)
 
                 # No batch print because valid has only 1 batch
@@ -107,7 +107,8 @@ def training(model, optimizer, loss_fn, DEVICE, n_epochs, batch_size, trainloade
     return model, train_loss_list, validation_loss_list
 
 
-def accuracy(model, testloader):
+def accuracy(model, testloader: DataLoader):
+    # Function for calculate accuracy on testset
     with torch.no_grad():
         n_correct = 0
         n_samples = 0
@@ -122,21 +123,22 @@ def accuracy(model, testloader):
     print("Accuracy on the test set:", acc, "%")
 
 
-def loss_plot(n_epochs, train_loss_list, validation_loss_list):
+def loss_plot(n_epochs: int, train_loss_list: list, validation_loss_list: list, title: str):
+    # Function that ploot 2 functions, train loss and validation loss
     plt.figure()
     plt.plot(range(1, n_epochs+1), train_loss_list)
     plt.plot(range(1, n_epochs+1), validation_loss_list)
     plt.legend(["Train loss", "Validation Loss"])
     plt.xlabel("Epochs")
     plt.ylabel("Loss value")
+    plt.title(title)
+    plt.savefig(title+".png", dpi=300, format="png")
     plt.show()
 
 
 # *** Models ***
-def out_dimensions(conv_layer, h_in, w_in):
-    '''
-    This function computes the output dimension of each convolutional layers in the most general way. 
-    '''
+def out_dimensions(conv_layer, h_in: int, w_in: int):
+    # Function to compute output dimension of convolutional layers
     h_out = floor((h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1) /
                   conv_layer.stride[0] + 1)
     w_out = floor((w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1) /
@@ -148,6 +150,7 @@ def out_dimensions(conv_layer, h_in, w_in):
 Q6 - Code
 '''
 class CNNS(nn.Module):
+    # Definition of CNN
     def __init__(self):
         super(CNNS, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3), padding=0, stride=1)
@@ -169,16 +172,19 @@ class CNNS(nn.Module):
         self.fc2 = nn.Linear(32, 10)
 
     def forward(self, x):
+        # First Block
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.relu1(x)
         x = self.pool1(x)
-        
+
+        # Second Block
         x = self.conv3(x)
         x = self.conv4(x)
         x = self.relu1(x)
         x = self.pool1(x)
-        
+
+        # Full connected
         n_channels, h, w = self.dimensions_final
         x = x.view(-1, n_channels * h * w)
         x = self.fc1(x)
@@ -276,9 +282,6 @@ class SSJCNN(nn.Module):
 
 
 if __name__ == "__main__":
-    '''
-    DON'T MODIFY THE SEED!
-    '''
     # Set the seed for reproducibility
     manual_seed = 42
     torch.manual_seed(manual_seed)
@@ -286,11 +289,13 @@ if __name__ == "__main__":
     '''
     Q4 - Code
     '''
+    # Initialize trasformer compose to cast images into tensors and normalize them
     transformer = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=0, std=1)])
 
     '''
     Q2 - Code
     '''
+    # Creating trainloader in batches and testloader in one batch
     batch_size = 32
     trainset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transformer)
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
@@ -337,7 +342,7 @@ if __name__ == "__main__":
     bar_width = 0.35
     index = np.arange(len(classes))
 
-    # Plot the bars
+    # Plot the class bars
     ax.bar(index, train_counts, bar_width, label='Train')
     ax.bar(index + bar_width, test_counts, bar_width, label='Test')
 
@@ -353,17 +358,18 @@ if __name__ == "__main__":
     '''
     Q3
     '''
+    # Print the type and size of images
+    # Already tensors because i used transformer in loading the data
     first_image = images[0]
 
-    print(f"Type of each image: {first_image.dtype}")
-    print(f"Shape of the image tensor: {first_image.shape}")  # (C, H, W)
-
+    print(f"Shape of the image tensor: {first_image.shape}")
     width, height, channels = first_image.shape
     print(f"Width: {width}, Height: {height}, Channels: {channels}\n")
 
     '''
     Q5 - Code
     '''
+    # Split testset into test and validation
     validset, testset = torch.utils.data.random_split(testset, [0.5, 0.5])
     testloader = DataLoader(testset, batch_size=len(testset))
     validloader = DataLoader(validset, batch_size=len(validset))
@@ -371,18 +377,20 @@ if __name__ == "__main__":
     '''
     Q7 -  Code
     '''
+    # Creating the first CNN
     model = CNNS()
     learning_rate = 0.033
-    n_epochs = 1#4
+    n_epochs = 4
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
-    print("Q7 Training...")
+    print("CNNS Training...")
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
     model, train_loss_list, validation_loss_list = training(model= model, optimizer=optimizer, loss_fn=loss_fn,
                                                             DEVICE=DEVICE, n_epochs=n_epochs, batch_size=batch_size,
                                                             trainloader=trainloader, validloader=validloader,
                                                             verbose=True)
+    # Print accuracy
     accuracy(model=model, testloader=testloader)
     print("\n")
 
@@ -390,39 +398,42 @@ if __name__ == "__main__":
     '''
     Q8 -  Code
     '''
-    loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list)
+    # Plotting the loss function for training and validation
+    loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list,
+              title='Train and validation loss')
 
 
     '''
     Q9 -  Code
     '''
+    # Data augmentation
     data_augment = transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.2), #0.3
-        transforms.RandomRotation(7), # 10
+        transforms.RandomHorizontalFlip(p=0.2),
+        transforms.RandomRotation(7),
         transforms.ToTensor(),
         transforms.Normalize(mean=0, std=1)
     ])
 
+    # Apply data augmentation
     trainset_q9 = datasets.CIFAR10(root='./data', train=True, download=False, transform=data_augment)
-
-    # Recreate train loader with data augment
     trainloader_q9 = DataLoader(trainset_q9, batch_size=batch_size, shuffle=True)
 
+    # Training the best CNN
     model = SSJCNN()
-    learning_rate = 0.0283 #0.028
-    n_epochs = 7 # 7 or 20
-    # with 20 -> 85,74
+    learning_rate = 0.0283
+    n_epochs = 20
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     loss_fn = nn.CrossEntropyLoss()
 
-    print("Q9 Training...")
-    model, train_loss_list, validation_loss_list = training(model= model, optimizer=optimizer, loss_fn=loss_fn,
+    print("SSJCNN Training...")
+    model, train_loss_list, validation_loss_list = training(model=model, optimizer=optimizer, loss_fn=loss_fn,
                                                             DEVICE=DEVICE, n_epochs=n_epochs, batch_size=batch_size,
                                                             trainloader=trainloader_q9, validloader=validloader,
                                                             verbose=False)
+    # Print stats
     accuracy(model=model, testloader=testloader)
-    print("\n")
-    loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list)
+    loss_plot(n_epochs=n_epochs, train_loss_list=train_loss_list, validation_loss_list=validation_loss_list,
+              title='Train and validation loss')
 
     '''
     Q10 -  Code
@@ -434,6 +445,7 @@ if __name__ == "__main__":
         torch.manual_seed(seed)
         print("Seed equal to ", torch.random.initial_seed())
 
+        # Define model and train
         model = CNNS()
         optimizer = optim.SGD(model.parameters(), lr=learning_rate)
         loss_fn = nn.CrossEntropyLoss()
